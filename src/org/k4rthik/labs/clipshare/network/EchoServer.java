@@ -15,20 +15,25 @@ public class EchoServer
 {
     public void startServer(int portNumber)
     {
-        try {
+        try
+        {
             ServerSocket serverSocket =
                     new ServerSocket(portNumber);
+            System.out.print("Waiting for client... ");
             Socket clientSocket = serverSocket.accept();
+            System.out.println("Connection established at "+System.currentTimeMillis());
+
             PrintWriter out =
                     new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(clientSocket.getInputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             String inputLine;
-            while ((inputLine = in.readLine()) != null) {
+            while ((inputLine = in.readLine()) != null)
+            {
                 out.println(inputLine);
             }
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
             System.out.println("Exception caught when trying to listen on port "
                     + portNumber + " or listening for a connection");
             System.out.println(e.getMessage());
