@@ -1,7 +1,6 @@
 package org.k4rthik.labs.clipshare;
 
-import org.k4rthik.labs.clipshare.network.EchoClient;
-import org.k4rthik.labs.clipshare.network.EchoServer;
+import org.k4rthik.labs.clipshare.network.ConnectionMonitor;
 
 /**
  * Author: kvenugopal
@@ -19,15 +18,13 @@ public class Main
         {
             String serverHost = args[1];
             int serverPort = Integer.parseInt(args[2]);
-            EchoClient echoClient = new EchoClient();
-            echoClient.startClient(serverHost, serverPort);
         }
         // Start program in server mode
         else if(args[0].equalsIgnoreCase("s"))
         {
             int serverPort = Integer.parseInt(args[1]);
-            EchoServer echoServer = new EchoServer();
-            echoServer.startServer(serverPort);
+            ConnectionMonitor connectionMonitor = new ConnectionMonitor(serverPort);
+            new Thread(connectionMonitor).start();
         }
     }
 }

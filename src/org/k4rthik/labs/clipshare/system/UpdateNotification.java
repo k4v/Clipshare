@@ -8,6 +8,8 @@ import java.io.Serializable;
  */
 public class UpdateNotification implements Serializable
 {
+    private static final long serialVersionUID = 1009011318628449014L;
+
     private String clipboardData;
     private int sourceMachine;
     private int newRevision;
