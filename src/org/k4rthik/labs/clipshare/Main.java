@@ -1,6 +1,7 @@
 package org.k4rthik.labs.clipshare;
 
 import org.k4rthik.labs.clipshare.network.ConnectionMonitor;
+import org.k4rthik.labs.clipshare.system.ClipboardListener;
 
 /**
  * Author: kvenugopal
@@ -26,5 +27,8 @@ public class Main
             ConnectionMonitor connectionMonitor = new ConnectionMonitor(serverPort);
             new Thread(connectionMonitor).start();
         }
+
+        ClipboardListener clipboardListener = new ClipboardListener();
+        new Thread(clipboardListener).start();
     }
 }
