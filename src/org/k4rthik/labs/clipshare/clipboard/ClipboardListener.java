@@ -1,4 +1,4 @@
-package org.k4rthik.labs.clipshare.system;
+package org.k4rthik.labs.clipshare.clipboard;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;

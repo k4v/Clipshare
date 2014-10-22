@@ -1,4 +1,6 @@
-package org.k4rthik.labs.clipshare.system;
+package org.k4rthik.labs.clipshare.clipboard;
+
+import org.k4rthik.labs.clipshare.network.UpdateMessage;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -12,13 +14,13 @@ public class ClipboardManager
 {
     // This stores metadata on the last update: [revision ID, originator machine index]
     String clipboardData;
-    int[] currentRevisionState;
+    int currentRevisionState;
 
     private static ClipboardManager INSTANCE = null;
 
     private ClipboardManager()
     {
-        this.currentRevisionState = new int[]{0,0};
+        this.currentRevisionState = 0;
     }
 
     public static synchronized ClipboardManager getInstance()
@@ -50,21 +52,16 @@ public class ClipboardManager
         }
     }
 
-    public boolean remoteClipboardEvent(UpdateNotification updateNotification)
+    public boolean remoteClipboardEvent(UpdateMessage updateMessage)
     {
         synchronized(LOCK)
         {
-            if (updateNotification.getNewRevision() >= currentRevisionState[1])
+            if (updateMessage.getUpdateRevision() > currentRevisionState)
             {
-                if ((updateNotification.getNewRevision() > currentRevisionState[1])
-                        || (updateNotification.getSourceMachine() > currentRevisionState[1]))
-                {
-                    this.clipboardData = updateNotification.getClipboardData();
-                    this.currentRevisionState[0] = updateNotification.getNewRevision();
-                    this.currentRevisionState[1] = updateNotification.getSourceMachine();
+                this.clipboardData = updateMessage.getNewClipboardData();
+                this.currentRevisionState = updateMessage.getUpdateRevision();
 
-                    return true;
-                }
+                return true;
             }
 
             return false;

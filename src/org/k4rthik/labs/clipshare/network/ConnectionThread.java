@@ -9,18 +9,16 @@ import java.net.Socket;
  * Author: kvenugopal
  * Date  : 10/14/2014
  *
- * The Client Connection thread manages a connection to a single client.
- * It listens for incoming data from the client socket and notifies the
- * ClipboardManager of the update.
+ * The ConnectionThread manages a connection to a single peer. It listens
+ * for incoming data from the connected socket and notifies the Clipboard
+ * Manager of the update. No writing to the peer happens here.
  */
-public class ClientConnectionThread implements Runnable
+public class ConnectionThread implements Runnable
 {
-    private int clientIndex;
     Socket clientConnection;
 
-    public ClientConnectionThread(int clientIndex, Socket clientConnection)
+    public ConnectionThread(Socket clientConnection)
     {
-        this.clientIndex = clientIndex;
         this.clientConnection = clientConnection;
     }
 
@@ -34,5 +32,10 @@ public class ClientConnectionThread implements Runnable
         {
 
         }
+    }
+
+    public void terminate()
+    {
+
     }
 }
