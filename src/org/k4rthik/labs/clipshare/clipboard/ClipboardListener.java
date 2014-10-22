@@ -35,6 +35,8 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
     @Override
     public void flavorsChanged(FlavorEvent flavorEvent)
     {
+        int currentRevision = ClipboardManager.getInstance().getCurrentRevision();
+
         System.out.println("Flavor changed");
         try
         {
@@ -45,13 +47,15 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
             /* Ignore */
         } finally
         {
-            regainOwnership();
+            regainOwnership(currentRevision);
         }
     }
 
     @Override
     public void lostOwnership(Clipboard clipboard, Transferable transferable)
     {
+        int currentRevision = ClipboardManager.getInstance().getCurrentRevision();
+
         System.out.println("Owner changed");
         try
         {
@@ -62,12 +66,12 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
             /* Ignore */
         } finally
         {
-            regainOwnership();
+            regainOwnership(currentRevision);
         }
     }
 
     // In case clipboard changes, ownership is lost, take it back again.
-    private void regainOwnership()
+    private synchronized void regainOwnership(int currentRevision)
     {
         // Try to get clipboard contents. This can fail if clipboard was recently changed.
         // TODO: Check if this sleep event causes missed updates and its effect on system.
@@ -94,8 +98,7 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
 
         try
         {
-            systemClipboard.setContents(clipboardContents, this);
-            ClipboardManager.getInstance().localClipboardEvent(clipboardContents);
+            ClipboardManager.getInstance().localClipboardEvent(clipboardContents, currentRevision);
         } catch (Exception e)
         {
             System.err.println("Unable to regain control of system clipboard. Shutting down.");
@@ -103,10 +106,15 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
         }
     }
 
+    public void setContents(Transferable newContents)
+    {
+        systemClipboard.setContents(newContents, this);
+    }
+
     @Override
     public void run()
     {
-        regainOwnership();
+        regainOwnership(ClipboardManager.getInstance().getCurrentRevision());
         while(keepAlive);
     }
 }

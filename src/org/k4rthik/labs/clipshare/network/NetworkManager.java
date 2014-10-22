@@ -2,6 +2,7 @@ package org.k4rthik.labs.clipshare.network;
 
 import org.k4rthik.labs.clipshare.Params;
 
+import java.awt.datatransfer.Transferable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -33,6 +34,21 @@ public class NetworkManager
         {
             new Thread(new ConnectionThread(connectionSocket)).start();
         }
+    }
+
+    public static synchronized NetworkManager getInstance()
+    {
+        if(INSTANCE == null)
+        {
+            INSTANCE = new NetworkManager();
+        }
+
+        return INSTANCE;
+    }
+
+    public static synchronized void init(Params execParams)
+    {
+        networkParams = execParams;
     }
 
     private Socket startClientMode()
@@ -75,23 +91,8 @@ public class NetworkManager
         return null;
     }
 
-    public void writeToPeer(String data)
+    public void writeToPeer(Transferable clipboardData, int currentRevision)
     {
-
-    }
-
-    public static synchronized NetworkManager getInstance()
-    {
-        if(INSTANCE == null)
-        {
-            INSTANCE = new NetworkManager();
-        }
-
-        return INSTANCE;
-    }
-
-    public static synchronized void init(Params execParams)
-    {
-        networkParams = execParams;
+        UpdateMessage updateMessage = new UpdateMessage(clipboardData, currentRevision);
     }
 }

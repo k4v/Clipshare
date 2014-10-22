@@ -1,5 +1,6 @@
 package org.k4rthik.labs.clipshare.clipboard;
 
+import org.k4rthik.labs.clipshare.network.NetworkManager;
 import org.k4rthik.labs.clipshare.network.UpdateMessage;
 
 import java.awt.datatransfer.DataFlavor;
@@ -13,10 +14,11 @@ import java.util.Arrays;
 public class ClipboardManager
 {
     // This stores metadata on the last update: [revision ID, originator machine index]
-    String clipboardData;
-    int currentRevisionState;
+    private int currentRevisionState;
+    private static Integer machineIndex = null;
 
     private static ClipboardManager INSTANCE = null;
+    private ClipboardListener clipboardListener = null;
 
     private ClipboardManager()
     {
@@ -25,42 +27,56 @@ public class ClipboardManager
 
     public static synchronized ClipboardManager getInstance()
     {
+        if(machineIndex == null)
+            throw new NullPointerException("System index not set. Cannot initialize Clipboard Manager");
+
         if(INSTANCE == null)
             INSTANCE = new ClipboardManager();
 
         return INSTANCE;
     }
 
-    Object LOCK = new Object();
-
-    public void localClipboardEvent(Transferable clipboardContents)
+    public static void init(int thisIndex)
     {
-        synchronized(LOCK)
+        machineIndex = thisIndex;
+    }
+
+    public synchronized int getCurrentRevision()
+    {
+        return currentRevisionState;
+    }
+
+    public void localClipboardEvent(Transferable clipboardContents, int currentRevision)
+    {
+        // Another clipboard update (probably remote) happened after this local update.
+        if(currentRevision < currentRevisionState)
+            return;
+
+        // This function will be synchronized with remoteClipboardEvent() by ClipboardListener.regainOwnership()
+        System.out.println(Arrays.asList(clipboardContents.getTransferDataFlavors()));
+        try
         {
-            System.out.println(Arrays.asList(clipboardContents.getTransferDataFlavors()));
-            try
+            if (clipboardContents.isDataFlavorSupported(DataFlavor.stringFlavor))
             {
-                if (clipboardContents.isDataFlavorSupported(DataFlavor.stringFlavor))
-                {
-                    //System.out.println ("Reading new clipboard data of type " + DataFlavor.stringFlavor);
-                    //System.out.println(clipboardContents.getTransferData(DataFlavor.stringFlavor));
-                }
-            } catch (Exception e)
-            {
-                e.printStackTrace();
+                System.out.println("Updating clipboard to "+clipboardContents.getTransferData(DataFlavor.stringFlavor));
+                clipboardListener.setContents(clipboardContents);
+                currentRevisionState++;
+
+                NetworkManager.getInstance().writeToPeer(clipboardContents, currentRevision);
             }
+        } catch (Exception e)
+        {
+            e.printStackTrace();
         }
     }
 
     public boolean remoteClipboardEvent(UpdateMessage updateMessage)
     {
-        synchronized(LOCK)
+        synchronized(clipboardListener)
         {
             if (updateMessage.getUpdateRevision() > currentRevisionState)
             {
-                this.clipboardData = updateMessage.getNewClipboardData();
                 this.currentRevisionState = updateMessage.getUpdateRevision();
-
                 return true;
             }
 
