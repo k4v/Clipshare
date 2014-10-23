@@ -35,7 +35,7 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
     @Override
     public void flavorsChanged(FlavorEvent flavorEvent)
     {
-        int currentRevision = ClipboardManager.getInstance().getCurrentRevision();
+        int[] currentRevision = ClipboardManager.getInstance().getCurrentRevision();
 
         System.out.println("Flavor changed");
         try
@@ -54,7 +54,7 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
     @Override
     public void lostOwnership(Clipboard clipboard, Transferable transferable)
     {
-        int currentRevision = ClipboardManager.getInstance().getCurrentRevision();
+        int[] currentRevision = ClipboardManager.getInstance().getCurrentRevision();
 
         System.out.println("Owner changed");
         try
@@ -71,7 +71,7 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
     }
 
     // In case clipboard changes, ownership is lost, take it back again.
-    private synchronized void regainOwnership(int currentRevision)
+    private synchronized void regainOwnership(int[] currentRevision)
     {
         // Try to get clipboard contents. This can fail if clipboard was recently changed.
         // TODO: Check if this sleep event causes missed updates and its effect on system.

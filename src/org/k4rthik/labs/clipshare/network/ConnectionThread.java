@@ -1,7 +1,8 @@
 package org.k4rthik.labs.clipshare.network;
 
+import org.k4rthik.labs.clipshare.clipboard.ClipboardManager;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.net.Socket;
 
@@ -27,10 +28,21 @@ public class ConnectionThread implements Runnable
     {
         try
         {
-            InputStream objectInput = new ObjectInputStream(clientConnection.getInputStream());
+            ObjectInputStream readFromPeerStream = new ObjectInputStream(clientConnection.getInputStream());
+            Object readObject = readFromPeerStream.readObject();
+            if(readObject instanceof UpdateMessage)
+            {
+                UpdateMessage updateMessage = (UpdateMessage)readObject;
+                ClipboardManager.getInstance().remoteClipboardEvent(updateMessage);
+            }
         } catch (IOException e)
         {
-
+            System.err.println("Error reading stream from peer");
+            e.printStackTrace(System.err);
+        } catch (ClassNotFoundException e)
+        {
+            System.err.println("Error reading message object");
+            e.printStackTrace(System.err);
         }
     }
 

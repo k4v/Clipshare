@@ -43,53 +43,68 @@ public class ClipboardManager
         machineIndex = thisIndex;
     }
 
-    public synchronized int getCurrentRevision()
+    public synchronized int[] getCurrentRevision()
     {
-        return currentRevisionState[machineIndex];
+        return currentRevisionState;
     }
 
     // This function will be synchronized with remoteClipboardEvent() by ClipboardListener.regainOwnership()
-    public void localClipboardEvent(Transferable clipboardContents, int currentRevision)
+    public boolean localClipboardEvent(Transferable clipboardContents, int[] updateTimeRevision)
     {
+        String newClipboardText = null;
         // Don't update if same string is copied to clipboard again.
-        try
-        {
-            if (clipboardContents.getTransferData(DataFlavor.stringFlavor).equals(currentClipboardData))
-            {
-
-            }
-        } catch (Exception e)
-        {
-            System.out.println("Unable to validate current clipboard contents");
-        }
-
-
-        if(
-                // Another clipboard update (probably remote) happened after this local update.
-                (currentRevision < currentRevisionState[machineIndex])
-                // Updates by "server" peer get precedence
-             || ((currentRevision == currentRevisionState[machineIndex]) && (machineIndex == 1))
-          )
-        {
-            return;
-        }
-
-        System.out.println(Arrays.asList(clipboardContents.getTransferDataFlavors()));
         try
         {
             if (clipboardContents.isDataFlavorSupported(DataFlavor.stringFlavor))
             {
-                String clipboardText = (String)(clipboardContents.getTransferData(DataFlavor.stringFlavor));
-                System.out.println("Updating clipboard to "+clipboardText);
-                clipboardListener.setContents(clipboardContents);
-                currentRevisionState[machineIndex]++;
-
-                NetworkManager.getInstance().writeToPeer(clipboardContents, currentRevision);
+                newClipboardText = (String) (clipboardContents.getTransferData(DataFlavor.stringFlavor));
+                if (newClipboardText.equals(currentClipboardData))
+                {
+                    System.out.println("No change in clipboard contents. Ignoring.");
+                    return false;
+                }
+            }
+            else
+            {
+                System.err.println("Current clipboard content does not have String representation");
+                return false;
             }
         } catch (Exception e)
         {
-            e.printStackTrace();
+            System.err.println("Unable to validate current clipboard contents");
+            return false;
         }
+
+        boolean writeAccepted = true;
+        if(Arrays.equals(updateTimeRevision, currentRevisionState))
+        {
+            currentRevisionState[machineIndex]++;
+        }
+        else if(compareRevisionStates(updateTimeRevision, machineIndex, currentRevisionState, 1-machineIndex))
+        {
+            currentRevisionState = updateTimeRevision;
+        }
+        else
+        {
+            writeAccepted = false;
+        }
+
+        System.out.println("Local update "+(writeAccepted ? "accepted" : "rejected"));
+        if(writeAccepted)
+        {
+            try
+            {
+                System.out.println("Updating clipboard to "+newClipboardText);
+                clipboardListener.setContents(clipboardContents);
+                NetworkManager.getInstance().writeToPeer(clipboardContents, currentRevisionState, machineIndex);
+            } catch (Exception e)
+            {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        return writeAccepted;
     }
 
     public boolean remoteClipboardEvent(UpdateMessage updateMessage)
@@ -97,23 +112,23 @@ public class ClipboardManager
         synchronized(clipboardListener)
         {
             // I am fully synced with other machine's local changes
-            if(currentRevisionState[machineIndex] == currentRevisionState[updateMessage.getSourceMachine()])
-            {
-                // New remote update from the other machine
-                if(currentRevisionState[updateMessage.getSourceMachine()] < updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()])
-                {
-                    currentRevisionState[machineIndex]++;
-                    currentRevisionState[updateMessage.getSourceMachine()] = updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()];
-                }
-            }
-            else if ((machineIndex > updateMessage.getSourceMachine())
-                    && (updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()] > currentRevisionState[updateMessage.getSourceMachine()]))
+            if(compareRevisionStates(currentRevisionState, machineIndex, updateMessage.getUpdateRevision(), updateMessage.getSourceMachine()))
             {
                 currentRevisionState[machineIndex]++;
                 currentRevisionState[updateMessage.getSourceMachine()] = updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()];
-            }
 
+                return true;
+            }
             return false;
         }
+    }
+
+    private boolean compareRevisionStates(int[] localState, int localIndex, int[] remoteState, int remoteIndex)
+    {
+        boolean compareResult = (((localState[localIndex] == remoteState[localIndex]) || (remoteIndex > localIndex))
+                && (localState[remoteIndex] < remoteState[remoteIndex]));
+
+        System.out.println("Comparing "+Arrays.asList(localState)+" and "+Arrays.asList(remoteState)+": "+compareResult);
+        return compareResult;
     }
 }

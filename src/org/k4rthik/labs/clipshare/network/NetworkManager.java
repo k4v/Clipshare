@@ -4,6 +4,7 @@ import org.k4rthik.labs.clipshare.Params;
 
 import java.awt.datatransfer.Transferable;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -26,9 +27,9 @@ public class NetworkManager
         }
 
         if(networkParams.getMode() == 'c')
-            connectionSocket = startClientMode();
+            startClientMode();
         else if(networkParams.getMode() == 's')
-            connectionSocket = startServerMode();
+            startServerMode();
 
         if(connectionSocket != null)
         {
@@ -51,25 +52,21 @@ public class NetworkManager
         networkParams = execParams;
     }
 
-    private Socket startClientMode()
+    private void startClientMode()
     {
         try
         {
             System.out.println("Attempting to connect to server...");
-            Socket echoSocket = new Socket(networkParams.getPeerHostname(), networkParams.getPeerPort());
+            connectionSocket = new Socket(networkParams.getPeerHostname(), networkParams.getPeerPort());
             System.out.println("Connection established at " + System.currentTimeMillis());
-
-            return echoSocket;
         } catch (Exception e)
         {
             System.out.println("Exception caught connecting to server on " + networkParams.getPeerPort());
             System.out.println(e.getMessage());
         }
-
-        return null;
     }
 
-    private Socket startServerMode()
+    private void startServerMode()
     {
         try
         {
@@ -77,22 +74,21 @@ public class NetworkManager
                     new ServerSocket(networkParams.getPeerPort());
             System.out.println("Waiting for client...");
 
-            Socket clientSocket = serverSocket.accept();
+            connectionSocket = serverSocket.accept();
             System.out.println("Connection established at " + System.currentTimeMillis());
-
-            return clientSocket;
         } catch(IOException e)
         {
             System.out.println("Exception caught when trying to listen on port "
                     + networkParams.getPeerPort() + " or listening for a connection");
             System.out.println(e.getMessage());
         }
-
-        return null;
     }
 
-    public void writeToPeer(Transferable clipboardData, int currentRevision)
+    public void writeToPeer(Transferable clipboardData, int[] currentRevision, int sourceMachine) throws IOException
     {
-        UpdateMessage updateMessage = new UpdateMessage(clipboardData, currentRevision);
+        UpdateMessage updateMessage = new UpdateMessage(clipboardData, currentRevision, sourceMachine);
+        ObjectOutputStream writeToPeerStream = new ObjectOutputStream(connectionSocket.getOutputStream());
+        writeToPeerStream.writeObject(updateMessage);
+        writeToPeerStream.close();
     }
 }
