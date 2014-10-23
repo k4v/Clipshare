@@ -14,12 +14,14 @@ public class UpdateMessage implements Serializable
 
     // Message contents describing clipboard update
     private final Transferable newClipboardData;
-    private final int updateRevision;
+    private final int[] updateRevision;
+    private final int sourceMachine;
 
-    public UpdateMessage(Transferable clipboardData, int updateRevision)
+    public UpdateMessage(Transferable clipboardData, int[] updateRevision, int sourceMachine)
     {
         this.newClipboardData = clipboardData;
         this.updateRevision = updateRevision;
+        this.sourceMachine = sourceMachine;
     }
 
     public Transferable getNewClipboardData()
@@ -27,8 +29,13 @@ public class UpdateMessage implements Serializable
         return newClipboardData;
     }
 
-    public int getUpdateRevision()
+    public int[] getUpdateRevision()
     {
         return updateRevision;
+    }
+
+    public int getSourceMachine()
+    {
+        return sourceMachine;
     }
 }

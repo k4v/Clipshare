@@ -14,7 +14,8 @@ import java.util.Arrays;
 public class ClipboardManager
 {
     // This stores metadata on the last update: [revision ID, originator machine index]
-    private int currentRevisionState;
+    private String currentClipboardData;
+    private int[]  currentRevisionState;
     private static Integer machineIndex = null;
 
     private static ClipboardManager INSTANCE = null;
@@ -22,7 +23,8 @@ public class ClipboardManager
 
     private ClipboardManager()
     {
-        this.currentRevisionState = 0;
+        this.currentRevisionState = new int[]{0, 0};
+        this.currentClipboardData = null;
     }
 
     public static synchronized ClipboardManager getInstance()
@@ -43,24 +45,44 @@ public class ClipboardManager
 
     public synchronized int getCurrentRevision()
     {
-        return currentRevisionState;
+        return currentRevisionState[machineIndex];
     }
 
+    // This function will be synchronized with remoteClipboardEvent() by ClipboardListener.regainOwnership()
     public void localClipboardEvent(Transferable clipboardContents, int currentRevision)
     {
-        // Another clipboard update (probably remote) happened after this local update.
-        if(currentRevision < currentRevisionState)
-            return;
+        // Don't update if same string is copied to clipboard again.
+        try
+        {
+            if (clipboardContents.getTransferData(DataFlavor.stringFlavor).equals(currentClipboardData))
+            {
 
-        // This function will be synchronized with remoteClipboardEvent() by ClipboardListener.regainOwnership()
+            }
+        } catch (Exception e)
+        {
+            System.out.println("Unable to validate current clipboard contents");
+        }
+
+
+        if(
+                // Another clipboard update (probably remote) happened after this local update.
+                (currentRevision < currentRevisionState[machineIndex])
+                // Updates by "server" peer get precedence
+             || ((currentRevision == currentRevisionState[machineIndex]) && (machineIndex == 1))
+          )
+        {
+            return;
+        }
+
         System.out.println(Arrays.asList(clipboardContents.getTransferDataFlavors()));
         try
         {
             if (clipboardContents.isDataFlavorSupported(DataFlavor.stringFlavor))
             {
-                System.out.println("Updating clipboard to "+clipboardContents.getTransferData(DataFlavor.stringFlavor));
+                String clipboardText = (String)(clipboardContents.getTransferData(DataFlavor.stringFlavor));
+                System.out.println("Updating clipboard to "+clipboardText);
                 clipboardListener.setContents(clipboardContents);
-                currentRevisionState++;
+                currentRevisionState[machineIndex]++;
 
                 NetworkManager.getInstance().writeToPeer(clipboardContents, currentRevision);
             }
@@ -74,10 +96,21 @@ public class ClipboardManager
     {
         synchronized(clipboardListener)
         {
-            if (updateMessage.getUpdateRevision() > currentRevisionState)
+            // I am fully synced with other machine's local changes
+            if(currentRevisionState[machineIndex] == currentRevisionState[updateMessage.getSourceMachine()])
             {
-                this.currentRevisionState = updateMessage.getUpdateRevision();
-                return true;
+                // New remote update from the other machine
+                if(currentRevisionState[updateMessage.getSourceMachine()] < updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()])
+                {
+                    currentRevisionState[machineIndex]++;
+                    currentRevisionState[updateMessage.getSourceMachine()] = updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()];
+                }
+            }
+            else if ((machineIndex > updateMessage.getSourceMachine())
+                    && (updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()] > currentRevisionState[updateMessage.getSourceMachine()]))
+            {
+                currentRevisionState[machineIndex]++;
+                currentRevisionState[updateMessage.getSourceMachine()] = updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()];
             }
 
             return false;
