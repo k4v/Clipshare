@@ -10,7 +10,7 @@ public class Params
     String peerHostname;
     int peerPort;
 
-    public Params(char MODE, int peerPort, String peerHostname)
+    public Params(char MODE, String peerHostname, int peerPort)
     {
         this.MODE = MODE;
         this.peerHostname = peerHostname;

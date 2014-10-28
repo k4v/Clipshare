@@ -25,6 +25,9 @@ public class ClipboardManager
     {
         this.currentRevisionState = new int[]{0, 0};
         this.currentClipboardData = null;
+
+        System.out.println("Starting clipboard listener");
+        new Thread(clipboardListener).start();
     }
 
     public static synchronized ClipboardManager getInstance()
