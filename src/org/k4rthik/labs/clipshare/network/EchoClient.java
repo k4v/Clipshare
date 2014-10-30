@@ -34,12 +34,12 @@ public class EchoClient
             }
         } catch (UnknownHostException e)
         {
-            System.err.println("Don't know about host " + serverHost);
+            System.err.println("Don't know about host " + serverHost + ": " + e.toString());
             System.exit(1);
         } catch (IOException e)
         {
             System.err.println("Couldn't get I/O for the connection to " +
-                    serverHost);
+                    serverHost+ ": " + e.toString());
             System.exit(1);
         }
     }

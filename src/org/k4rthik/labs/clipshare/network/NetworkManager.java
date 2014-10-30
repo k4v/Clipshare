@@ -14,7 +14,7 @@ import java.net.Socket;
  * Author: kvenugopal
  * Date  : 10/21/14
  */
-public class NetworkManager
+public class NetworkManager implements Runnable
 {
     private static Params networkParams = null;
     private static NetworkManager INSTANCE = null;
@@ -27,34 +27,10 @@ public class NetworkManager
         {
             throw new NullPointerException("No network parameters provided. Cannot initialize Network Manager");
         }
-
-        if(networkParams.getMode() == 'c')
-            startClientMode();
-        else if(networkParams.getMode() == 's')
-            startServerMode();
-
-        if(connectionSocket != null)
-        {
-            try
-            {
-                new Thread(new ConnectionThread(connectionSocket)).start();
-            } catch (Exception e)
-            {
-                System.err.println("Error starting connection thread. Cannot cannot data to peer");
-                try
-                {
-                    connectionSocket.close();
-                } catch (IOException ioe)
-                {
-                    /* Ignore */
-                }
-            }
-        }
     }
 
     public static synchronized NetworkManager getInstance()
     {
-        System.out.println(":: GET NM Instance");
         if(INSTANCE == null)
         {
             INSTANCE = new NetworkManager();
@@ -111,14 +87,39 @@ public class NetworkManager
             {
                 ObjectOutputStream writeToPeerStream = new ObjectOutputStream(connectionSocket.getOutputStream());
                 writeToPeerStream.writeObject(updateMessage);
-                writeToPeerStream.close();
             } catch (IOException e)
             {
-                System.out.println("Looks like the stream is not open");
+                System.out.println("Looks like the stream is not open: " + e.toString());
             }
         } catch(UnsupportedFlavorException e)
         {
-            System.err.println("This is IMPOSSIBRU");
+            System.err.println("This is IMPOSSIBRU: " + e.toString());
+        }
+    }
+
+    public void run()
+    {
+        if(networkParams.getMode() == 'c')
+            startClientMode();
+        else if(networkParams.getMode() == 's')
+            startServerMode();
+
+        if(connectionSocket != null)
+        {
+            try
+            {
+                new Thread(new ConnectionThread(connectionSocket)).start();
+            } catch (Exception e)
+            {
+                System.err.println("Error starting connection thread. Cannot send data to peer: " + e.toString());
+                try
+                {
+                    connectionSocket.close();
+                } catch (IOException ioe)
+                {
+                    /* Ignore */
+                }
+            }
         }
     }
 }

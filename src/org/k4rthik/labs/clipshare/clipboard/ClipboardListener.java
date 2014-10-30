@@ -57,7 +57,6 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
             /* Ignore */
         }
 
-        System.out.println("WAIT? "+!Thread.holdsLock(this));
         regainOwnership(currentRevision);
     }
 

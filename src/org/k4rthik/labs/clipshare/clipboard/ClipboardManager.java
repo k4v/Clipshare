@@ -11,7 +11,7 @@ import java.util.Arrays;
  * Author: kvenugopal
  * Date  : 10/14/2014
  */
-public class ClipboardManager
+public class ClipboardManager implements Runnable
 {
     // This stores metadata on the last update: [revision ID, originator machine index]
     private String currentClipboardData;
@@ -27,7 +27,6 @@ public class ClipboardManager
         this.currentClipboardData = null;
 
         clipboardListener = new ClipboardListener();
-        new Thread(clipboardListener).start();
     }
 
     public static synchronized ClipboardManager getInstance()
@@ -135,7 +134,12 @@ public class ClipboardManager
         boolean compareResult = (((localState[localIndex] == remoteState[localIndex]) || (remoteIndex > localIndex))
                 && (localState[remoteIndex] < remoteState[remoteIndex]));
 
-        System.out.println("Comparing "+Arrays.asList(localState)+" and "+Arrays.asList(remoteState)+": "+compareResult);
+        System.out.println("Comparing "+Arrays.toString(localState)+" and "+Arrays.toString(remoteState)+": "+compareResult);
         return compareResult;
+    }
+
+    public void run()
+    {
+        new Thread(clipboardListener).start();
     }
 }

@@ -3,6 +3,8 @@ package org.k4rthik.labs.clipshare;
 import org.k4rthik.labs.clipshare.clipboard.ClipboardManager;
 import org.k4rthik.labs.clipshare.network.NetworkManager;
 
+import java.util.Arrays;
+
 /**
  * Author: kvenugopal
  * Date  : 10/14/2014
@@ -45,12 +47,12 @@ public class Main
         }
 
         ClipboardManager.init(machineIndex);
-        ClipboardManager.getInstance();
-
         NetworkManager.init(execParams);
-        NetworkManager.getInstance();
 
-        System.out.println("MAIN is out");
+        new Thread(ClipboardManager.getInstance()).start();
+        new Thread(NetworkManager.getInstance()).start();
+        int[] arr = new int[]{1, 2, 3, 4, 5};
+        System.out.println(Arrays.toString(arr));
     }
 
     private static void printUsage(int exitCode)

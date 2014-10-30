@@ -36,7 +36,6 @@ public class ConnectionThread implements Runnable
             if(readFromPeerStream.available() > 0)
             {
                 Object readObject = readFromPeerStream.readObject();
-                System.out.println("READ " + readObject);
                 if (readObject instanceof UpdateMessage)
                 {
                     UpdateMessage updateMessage = (UpdateMessage) readObject;
@@ -45,12 +44,10 @@ public class ConnectionThread implements Runnable
             }
         } catch (IOException e)
         {
-            System.err.println("Error reading stream from peer");
-            e.printStackTrace(System.err);
+            System.err.println("Error reading stream from peer: "+e.toString());
         } catch (ClassNotFoundException e)
         {
-            System.err.println("Error reading message object");
-            e.printStackTrace(System.err);
+            System.err.println("Error reading message object: "+e.toString());
         }
     }
 
