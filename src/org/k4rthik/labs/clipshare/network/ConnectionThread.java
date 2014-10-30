@@ -17,23 +17,31 @@ import java.net.Socket;
 public class ConnectionThread implements Runnable
 {
     Socket clientConnection;
+    ObjectInputStream readFromPeerStream;
+    boolean keepAlive = false;
 
-    public ConnectionThread(Socket clientConnection)
+    public ConnectionThread(Socket clientConnection) throws IOException
     {
         this.clientConnection = clientConnection;
+        readFromPeerStream = new ObjectInputStream(clientConnection.getInputStream());
+        this.keepAlive = true;
     }
 
     @Override
     public void run()
     {
+        while(keepAlive)
         try
         {
-            ObjectInputStream readFromPeerStream = new ObjectInputStream(clientConnection.getInputStream());
-            Object readObject = readFromPeerStream.readObject();
-            if(readObject instanceof UpdateMessage)
+            if(readFromPeerStream.available() > 0)
             {
-                UpdateMessage updateMessage = (UpdateMessage)readObject;
-                ClipboardManager.getInstance().remoteClipboardEvent(updateMessage);
+                Object readObject = readFromPeerStream.readObject();
+                System.out.println("READ " + readObject);
+                if (readObject instanceof UpdateMessage)
+                {
+                    UpdateMessage updateMessage = (UpdateMessage) readObject;
+                    ClipboardManager.getInstance().remoteClipboardEvent(updateMessage);
+                }
             }
         } catch (IOException e)
         {
@@ -48,6 +56,6 @@ public class ConnectionThread implements Runnable
 
     public void terminate()
     {
-
+        this.keepAlive = false;
     }
 }

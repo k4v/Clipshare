@@ -5,6 +5,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.FlavorEvent;
 import java.awt.datatransfer.FlavorListener;
+import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 
 /**
@@ -37,18 +38,8 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
     {
         int[] currentRevision = ClipboardManager.getInstance().getCurrentRevision();
 
-        System.out.println("Flavor changed");
-        try
-        {
-            // Some time for the clipboard to be ready
-            Thread.sleep(50);
-        } catch(InterruptedException e)
-        {
-            /* Ignore */
-        } finally
-        {
-            regainOwnership(currentRevision);
-        }
+        System.out.println("Clipboard update detected (Flavor)");
+        regainOwnership(currentRevision);
     }
 
     @Override
@@ -56,18 +47,18 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
     {
         int[] currentRevision = ClipboardManager.getInstance().getCurrentRevision();
 
-        System.out.println("Owner changed");
+        System.out.println("Clipboard update detected (Owner)");
+
         try
         {
-            // Some time for the clipboard to be ready
             Thread.sleep(50);
-        } catch(InterruptedException e)
+        } catch (InterruptedException ie)
         {
             /* Ignore */
-        } finally
-        {
-            regainOwnership(currentRevision);
         }
+
+        System.out.println("WAIT? "+!Thread.holdsLock(this));
+        regainOwnership(currentRevision);
     }
 
     // In case clipboard changes, ownership is lost, take it back again.
@@ -79,6 +70,7 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
         boolean retryOnException;
         do
         {
+            System.out.println("Trying to get ownership");
             retryOnException = false;
             try
             {
@@ -111,10 +103,20 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
         systemClipboard.setContents(newContents, this);
     }
 
+    public void setContents(String newContents)
+    {
+        StringSelection stringSelection = new StringSelection(newContents);
+        setContents(stringSelection);
+    }
+
     @Override
     public void run()
     {
-        regainOwnership(ClipboardManager.getInstance().getCurrentRevision());
+        keepAlive = true;
+        //regainOwnership(ClipboardManager.getInstance().getCurrentRevision());
+
+        System.out.println("Starting clipboard listener");
         while(keepAlive);
+        System.out.println("Stopping clipboard listener");
     }
 }

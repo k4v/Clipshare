@@ -2,7 +2,9 @@ package org.k4rthik.labs.clipshare.network;
 
 import org.k4rthik.labs.clipshare.Params;
 
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -33,12 +35,26 @@ public class NetworkManager
 
         if(connectionSocket != null)
         {
-            new Thread(new ConnectionThread(connectionSocket)).start();
+            try
+            {
+                new Thread(new ConnectionThread(connectionSocket)).start();
+            } catch (Exception e)
+            {
+                System.err.println("Error starting connection thread. Cannot cannot data to peer");
+                try
+                {
+                    connectionSocket.close();
+                } catch (IOException ioe)
+                {
+                    /* Ignore */
+                }
+            }
         }
     }
 
     public static synchronized NetworkManager getInstance()
     {
+        System.out.println(":: GET NM Instance");
         if(INSTANCE == null)
         {
             INSTANCE = new NetworkManager();
@@ -86,9 +102,23 @@ public class NetworkManager
 
     public void writeToPeer(Transferable clipboardData, int[] currentRevision, int sourceMachine) throws IOException
     {
-        UpdateMessage updateMessage = new UpdateMessage(clipboardData, currentRevision, sourceMachine);
-        ObjectOutputStream writeToPeerStream = new ObjectOutputStream(connectionSocket.getOutputStream());
-        writeToPeerStream.writeObject(updateMessage);
-        writeToPeerStream.close();
+        System.out.println("Attempting to send data to peer");
+        try
+        {
+            UpdateMessage updateMessage = new UpdateMessage((String)(clipboardData.getTransferData(DataFlavor.stringFlavor)), currentRevision, sourceMachine);
+
+            try
+            {
+                ObjectOutputStream writeToPeerStream = new ObjectOutputStream(connectionSocket.getOutputStream());
+                writeToPeerStream.writeObject(updateMessage);
+                writeToPeerStream.close();
+            } catch (IOException e)
+            {
+                System.out.println("Looks like the stream is not open");
+            }
+        } catch(UnsupportedFlavorException e)
+        {
+            System.err.println("This is IMPOSSIBRU");
+        }
     }
 }

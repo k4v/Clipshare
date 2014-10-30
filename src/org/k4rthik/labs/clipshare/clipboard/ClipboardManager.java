@@ -19,14 +19,14 @@ public class ClipboardManager
     private static Integer machineIndex = null;
 
     private static ClipboardManager INSTANCE = null;
-    private ClipboardListener clipboardListener = null;
+    private final ClipboardListener clipboardListener;
 
     private ClipboardManager()
     {
         this.currentRevisionState = new int[]{0, 0};
         this.currentClipboardData = null;
 
-        System.out.println("Starting clipboard listener");
+        clipboardListener = new ClipboardListener();
         new Thread(clipboardListener).start();
     }
 
@@ -54,7 +54,7 @@ public class ClipboardManager
     // This function will be synchronized with remoteClipboardEvent() by ClipboardListener.regainOwnership()
     public boolean localClipboardEvent(Transferable clipboardContents, int[] updateTimeRevision)
     {
-        String newClipboardText = null;
+        String newClipboardText;
         // Don't update if same string is copied to clipboard again.
         try
         {
@@ -70,6 +70,7 @@ public class ClipboardManager
             else
             {
                 System.err.println("Current clipboard content does not have String representation");
+                System.err.println("Supported representations: "+Arrays.asList(clipboardContents.getTransferDataFlavors()));
                 return false;
             }
         } catch (Exception e)
@@ -98,7 +99,7 @@ public class ClipboardManager
             try
             {
                 System.out.println("Updating clipboard to "+newClipboardText);
-                clipboardListener.setContents(clipboardContents);
+                //clipboardListener.setContents(clipboardContents);
                 NetworkManager.getInstance().writeToPeer(clipboardContents, currentRevisionState, machineIndex);
             } catch (Exception e)
             {
@@ -114,11 +115,14 @@ public class ClipboardManager
     {
         synchronized(clipboardListener)
         {
+            System.out.println("Updating clipboard on remote event");
             // I am fully synced with other machine's local changes
             if(compareRevisionStates(currentRevisionState, machineIndex, updateMessage.getUpdateRevision(), updateMessage.getSourceMachine()))
             {
                 currentRevisionState[machineIndex]++;
                 currentRevisionState[updateMessage.getSourceMachine()] = updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()];
+
+                clipboardListener.setContents(updateMessage.getNewClipboardData());
 
                 return true;
             }

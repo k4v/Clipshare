@@ -49,6 +49,8 @@ public class Main
 
         NetworkManager.init(execParams);
         NetworkManager.getInstance();
+
+        System.out.println("MAIN is out");
     }
 
     private static void printUsage(int exitCode)
