@@ -1,0 +1,32 @@
+<project default="makeClipshare">
+    <target name="compile">
+            <javac srcdir="src" />
+    </target>
+
+    <target name="jar">
+        <delete>
+            <fileset dir="bin" includes="Clipshare-*.jar"/>
+        </delete>
+        <property name="version.num" value="1.0.0"/>
+
+        <manifest file="src/META-INF/MANIFEST.MF">
+            <attribute name="Built-By" value="${user.name}"/>
+            <attribute name="Main-Class" value="org.k4rthik.labs.clipshare.Main"/>
+            <attribute name="Implementation-Version" value="${version.num}"/>
+        </manifest>
+
+        <jar destfile="bin/Clipshare-${version.num}.jar"
+             basedir="."
+             includes="**/*.class"
+             manifest="src/META-INF/MANIFEST.MF"
+                />
+    </target>
+
+    <target name="cleanup">
+        <delete>
+            <fileset dir="." includes="**/*.class"/>
+        </delete>
+    </target>
+
+    <target name="makeClipshare" depends="compile,jar,cleanup" />
+</project>
