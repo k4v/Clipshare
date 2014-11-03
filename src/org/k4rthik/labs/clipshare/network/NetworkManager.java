@@ -20,6 +20,7 @@ public class NetworkManager implements Runnable
     private static NetworkManager INSTANCE = null;
 
     Socket connectionSocket = null;
+    ObjectOutputStream writeToPeerStream = null;
 
     private NetworkManager()
     {
@@ -64,7 +65,7 @@ public class NetworkManager implements Runnable
         {
             ServerSocket serverSocket =
                     new ServerSocket(networkParams.getPeerPort());
-            System.out.println("Waiting for client...");
+            System.out.println("Waiting for incoming connection from client...");
 
             connectionSocket = serverSocket.accept();
             System.out.println("Connection established at " + System.currentTimeMillis());
@@ -85,8 +86,9 @@ public class NetworkManager implements Runnable
 
             try
             {
-                ObjectOutputStream writeToPeerStream = new ObjectOutputStream(connectionSocket.getOutputStream());
+                writeToPeerStream.reset();
                 writeToPeerStream.writeObject(updateMessage);
+                writeToPeerStream.flush();
             } catch (IOException e)
             {
                 System.out.println("Looks like the stream is not open: " + e.toString());
@@ -97,8 +99,10 @@ public class NetworkManager implements Runnable
         }
     }
 
+    @Override
     public void run()
     {
+
         if(networkParams.getMode() == 'c')
             startClientMode();
         else if(networkParams.getMode() == 's')
@@ -108,6 +112,7 @@ public class NetworkManager implements Runnable
         {
             try
             {
+                writeToPeerStream = new ObjectOutputStream(connectionSocket.getOutputStream());
                 new Thread(new ConnectionThread(connectionSocket)).start();
             } catch (Exception e)
             {

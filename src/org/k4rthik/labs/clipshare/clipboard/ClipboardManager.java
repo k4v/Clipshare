@@ -79,6 +79,7 @@ public class ClipboardManager implements Runnable
         }
 
         boolean writeAccepted = true;
+
         if(Arrays.equals(updateTimeRevision, currentRevisionState))
         {
             currentRevisionState[machineIndex]++;
@@ -89,16 +90,20 @@ public class ClipboardManager implements Runnable
         }
         else
         {
+            // If revisions do not allow this clipboard update to be accepted, reject and reset update to previous value.
             writeAccepted = false;
+            clipboardListener.setContents(currentClipboardData);
         }
 
-        System.out.println("Local update "+(writeAccepted ? "accepted" : "rejected"));
+        System.out.println("Local update " + (writeAccepted ? ("accepted: "+newClipboardText) :
+                "rejected. Newer revision available"));
+
         if(writeAccepted)
         {
+            currentClipboardData = newClipboardText;
+
             try
             {
-                System.out.println("Updating clipboard to "+newClipboardText);
-                //clipboardListener.setContents(clipboardContents);
                 NetworkManager.getInstance().writeToPeer(clipboardContents, currentRevisionState, machineIndex);
             } catch (Exception e)
             {
@@ -114,28 +119,28 @@ public class ClipboardManager implements Runnable
     {
         synchronized(clipboardListener)
         {
-            System.out.println("Updating clipboard on remote event");
             // I am fully synced with other machine's local changes
             if(compareRevisionStates(currentRevisionState, machineIndex, updateMessage.getUpdateRevision(), updateMessage.getSourceMachine()))
             {
                 currentRevisionState[machineIndex]++;
                 currentRevisionState[updateMessage.getSourceMachine()] = updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()];
 
+                System.out.println("Peer sent clipboard update: Setting clipboard to "+updateMessage.getNewClipboardData());
+
                 clipboardListener.setContents(updateMessage.getNewClipboardData());
+                currentClipboardData = updateMessage.getNewClipboardData();
 
                 return true;
             }
+            System.out.println("Clipboard update from peer rejected. Newer version available locally");
             return false;
         }
     }
 
-    private boolean compareRevisionStates(int[] localState, int localIndex, int[] remoteState, int remoteIndex)
+    private static boolean compareRevisionStates(int[] localState, int localIndex, int[] remoteState, int remoteIndex)
     {
-        boolean compareResult = (((localState[localIndex] == remoteState[localIndex]) || (remoteIndex > localIndex))
+        return (((localState[localIndex] == remoteState[localIndex]) || (remoteIndex < localIndex))
                 && (localState[remoteIndex] < remoteState[remoteIndex]));
-
-        System.out.println("Comparing "+Arrays.toString(localState)+" and "+Arrays.toString(remoteState)+": "+compareResult);
-        return compareResult;
     }
 
     public void run()

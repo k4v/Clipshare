@@ -30,12 +30,11 @@ public class ConnectionThread implements Runnable
     @Override
     public void run()
     {
-        while(keepAlive)
         try
         {
-            if(readFromPeerStream.available() > 0)
+            Object readObject;
+            while((readObject = readFromPeerStream.readObject()) != null)
             {
-                Object readObject = readFromPeerStream.readObject();
                 if (readObject instanceof UpdateMessage)
                 {
                     UpdateMessage updateMessage = (UpdateMessage) readObject;

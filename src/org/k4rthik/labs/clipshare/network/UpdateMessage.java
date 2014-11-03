@@ -1,6 +1,7 @@
 package org.k4rthik.labs.clipshare.network;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Author: kvenugopal
@@ -36,5 +37,11 @@ public class UpdateMessage implements Serializable
     public int getSourceMachine()
     {
         return sourceMachine;
+    }
+
+    @Override
+    public String toString()
+    {
+        return newClipboardData+":"+ Arrays.toString(updateRevision)+"@"+sourceMachine;
     }
 }

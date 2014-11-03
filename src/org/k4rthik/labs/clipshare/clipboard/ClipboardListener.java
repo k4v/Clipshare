@@ -36,18 +36,18 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
     @Override
     public void flavorsChanged(FlavorEvent flavorEvent)
     {
-        int[] currentRevision = ClipboardManager.getInstance().getCurrentRevision();
-
         System.out.println("Clipboard update detected (Flavor)");
-        regainOwnership(currentRevision);
+
+        int[] currentRevision = ClipboardManager.getInstance().getCurrentRevision();
+        regainOwnershipAndBroadcast(currentRevision);
     }
 
     @Override
     public void lostOwnership(Clipboard clipboard, Transferable transferable)
     {
-        int[] currentRevision = ClipboardManager.getInstance().getCurrentRevision();
-
         System.out.println("Clipboard update detected (Owner)");
+
+        int[] currentRevision = ClipboardManager.getInstance().getCurrentRevision();
 
         try
         {
@@ -57,43 +57,48 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
             /* Ignore */
         }
 
-        regainOwnership(currentRevision);
+        regainOwnershipAndBroadcast(currentRevision);
     }
 
-    // In case clipboard changes, ownership is lost, take it back again.
-    private synchronized void regainOwnership(int[] currentRevision)
+    // In case clipboard changes, ownership is lost, take it back again, then send to peers
+    private void regainOwnershipAndBroadcast(int[] currentRevision)
     {
-        // Try to get clipboard contents. This can fail if clipboard was recently changed.
-        // TODO: Check if this sleep event causes missed updates and its effect on system.
-        Transferable clipboardContents = null;
-        boolean retryOnException;
-        do
+        synchronized(this)
         {
-            System.out.println("Trying to get ownership");
-            retryOnException = false;
-            try
+            // Try to get clipboard contents. This can fail if clipboard was recently changed.
+            // TODO: Check if this sleep event causes missed updates and its effect on system.
+            Transferable clipboardContents = null;
+            boolean retryOnException;
+            do
             {
-                clipboardContents = systemClipboard.getContents(null);
-            } catch (Exception e)
-            {
-                retryOnException = true;
+                retryOnException = false;
                 try
                 {
-                    Thread.sleep(50);
-                } catch (InterruptedException ie)
+                    clipboardContents = systemClipboard.getContents(null);
+                } catch (Exception e)
                 {
-                    /* Ignore */
+                    retryOnException = true;
+                    try
+                    {
+                        Thread.sleep(50);
+                    } catch (InterruptedException ie)
+                    {
+                        /* Ignore */
+                    }
                 }
-            }
-        } while(retryOnException);
+            } while (retryOnException);
 
-        try
-        {
-            ClipboardManager.getInstance().localClipboardEvent(clipboardContents, currentRevision);
-        } catch (Exception e)
-        {
-            System.err.println("Unable to regain control of system clipboard. Shutting down.");
-            terminate();
+            // To regain clipboard ownership, this application needs to be the one setting the clipboard
+            setContents(clipboardContents);
+
+            try
+            {
+                ClipboardManager.getInstance().localClipboardEvent(clipboardContents, currentRevision);
+            } catch (Exception e)
+            {
+                System.err.println("Unable to regain control of system clipboard. Shutting down.");
+                terminate();
+            }
         }
     }
 
@@ -112,10 +117,8 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
     public void run()
     {
         keepAlive = true;
-        //regainOwnership(ClipboardManager.getInstance().getCurrentRevision());
 
         System.out.println("Starting clipboard listener");
         while(keepAlive);
-        System.out.println("Stopping clipboard listener");
     }
 }
