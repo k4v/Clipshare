@@ -19,4 +19,4 @@ Usage
 
 To start the program in server mode: `java -jar Clipshare.jar -s {server-port}`
 
-To start the program in client mode: `java -jar Clipshare.jar -s {server-host} {server-port}`
+To start the program in client mode: `java -jar Clipshare.jar -c {server-host} {server-port}`
