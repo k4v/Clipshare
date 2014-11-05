@@ -17,6 +17,7 @@ public class ClipboardManager implements Runnable
     private String currentClipboardData;
     private int[]  currentRevisionState;
     private static Integer machineIndex = null;
+    private static Integer lastUpdateFromMachine = null;
 
     private static ClipboardManager INSTANCE = null;
     private final ClipboardListener clipboardListener;
@@ -43,6 +44,7 @@ public class ClipboardManager implements Runnable
     public static void init(int thisIndex)
     {
         machineIndex = thisIndex;
+        lastUpdateFromMachine = thisIndex;
     }
 
     public synchronized int[] getCurrentRevision()
@@ -101,6 +103,7 @@ public class ClipboardManager implements Runnable
         if(writeAccepted)
         {
             currentClipboardData = newClipboardText;
+            lastUpdateFromMachine = machineIndex;
 
             try
             {
@@ -125,6 +128,8 @@ public class ClipboardManager implements Runnable
                 currentRevisionState[machineIndex]++;
                 currentRevisionState[updateMessage.getSourceMachine()] = updateMessage.getUpdateRevision()[updateMessage.getSourceMachine()];
 
+                lastUpdateFromMachine = 1 - machineIndex;
+
                 System.out.println("Peer sent clipboard update: Setting clipboard to "+updateMessage.getNewClipboardData());
 
                 clipboardListener.setContents(updateMessage.getNewClipboardData());
@@ -139,8 +144,17 @@ public class ClipboardManager implements Runnable
 
     private static boolean compareRevisionStates(int[] localState, int localIndex, int[] remoteState, int remoteIndex)
     {
-        return (((localState[localIndex] == remoteState[localIndex]) || (remoteIndex < localIndex))
-                && (localState[remoteIndex] < remoteState[remoteIndex]));
+        if (lastUpdateFromMachine.equals(machineIndex))
+        {
+            // Incoming update should not be older than previous update
+            return (localState[remoteIndex] < remoteState[remoteIndex])
+                    // Remote system should have got all our updates, except if remote's the server
+                    && ((localState[localIndex] == remoteState[localIndex]) || (remoteIndex < localIndex));
+        } else
+        {
+            return (localState[remoteIndex] < remoteState[remoteIndex])
+                    && ((localState[localIndex] >= remoteState[localIndex]) || (remoteIndex < localIndex));
+        }
     }
 
     public void run()

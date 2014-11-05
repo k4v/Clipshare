@@ -1,6 +1,3 @@
 Manifest-Version: 1.0
-Ant-Version: Apache Ant 1.8.2
-Created-By: 1.7.0_65-b32 (Oracle Corporation)
-Built-By: kvenugopal
 Main-Class: org.k4rthik.labs.clipshare.Main
-Implementation-Version: 1.0.0
+Implementation-Version: 1.0.1
