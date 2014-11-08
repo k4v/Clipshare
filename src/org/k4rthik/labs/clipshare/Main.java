@@ -1,7 +1,10 @@
 package org.k4rthik.labs.clipshare;
 
 import org.k4rthik.labs.clipshare.clipboard.ClipboardManager;
+import org.k4rthik.labs.clipshare.gui.MainWindow;
 import org.k4rthik.labs.clipshare.network.NetworkManager;
+
+import javax.swing.*;
 
 /**
  * Author: kvenugopal
@@ -49,6 +52,12 @@ public class Main
 
         new Thread(ClipboardManager.getInstance()).start();
         new Thread(NetworkManager.getInstance()).start();
+
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                createAndShowGUI();
+            }
+        });
     }
 
     private static void printUsage(int exitCode)
@@ -58,5 +67,22 @@ public class Main
         System.out.println("| -s {server port}");
 
         System.exit(exitCode);
+    }
+
+    private static void createAndShowGUI()
+    {
+        //Create and set up the window.
+        JFrame frame = new JFrame("Clipshare");
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        //Create and set up the content pane.
+        JComponent newContentPane = new MainWindow();
+        newContentPane.setOpaque(true);
+        frame.setContentPane(newContentPane);
+
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+        frame.setResizable(false);
     }
 }

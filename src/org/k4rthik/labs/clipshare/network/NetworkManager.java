@@ -79,6 +79,10 @@ public class NetworkManager implements Runnable
 
     public void writeToPeer(Transferable clipboardData, int[] currentRevision, int sourceMachine) throws IOException
     {
+        // Somebody was in a rush here
+        if(writeToPeerStream == null)
+            return;
+
         System.out.println("Attempting to send data to peer");
         try
         {
