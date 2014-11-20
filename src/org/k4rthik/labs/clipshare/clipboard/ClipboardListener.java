@@ -119,6 +119,17 @@ public class ClipboardListener implements ClipboardOwner, FlavorListener, Runnab
         keepAlive = true;
 
         System.out.println("Starting clipboard listener");
-        while(keepAlive);
+        while(keepAlive)
+        {
+            try
+            {
+                // This is to prevent ridiculuously high CPU usage.
+                // Brings it down from ~ 20% to < 5%
+                Thread.sleep(10);
+            } catch (InterruptedException e)
+            {
+                /* Oh well, ignore */
+            }
+        }
     }
 }
